@@ -1,0 +1,84 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile information",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "role": { "type": "string", "enum": ["user", "admin"] }
+      },
+      "required": ["name", "email", "role"]
+    },
+    "Booking": {
+      "title": "Booking",
+      "description": "Service booking details",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "service": { "type": "string" },
+        "date": { "type": "string", "format": "date-time" },
+        "status": { "type": "string", "enum": ["Pending", "Confirmed", "Completed"] },
+        "notes": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "service", "date", "status"]
+    },
+    "Service": {
+      "title": "Service",
+      "description": "Videography services offered",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "price": { "type": "number" },
+        "description": { "type": "string" }
+      },
+      "required": ["name", "price", "description"]
+    },
+    "Portfolio": {
+      "title": "Portfolio",
+      "description": "Portfolio media items",
+      "type": "object",
+      "properties": {
+        "mediaUrl": { "type": "string" },
+        "category": { "type": "string", "enum": ["Wedding", "Cars", "Events"] },
+        "type": { "type": "string", "enum": ["image", "video"] }
+      },
+      "required": ["mediaUrl", "category", "type"]
+    },
+    "Upload": {
+      "title": "Upload",
+      "description": "User uploaded files",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "fileUrl": { "type": "string" },
+        "fileName": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "fileUrl", "fileName"]
+    },
+    "ContactMessage": {
+      "title": "ContactMessage",
+      "description": "Messages from contact form",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "phone": { "type": "string" },
+        "message": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "email", "message"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": { "schema": "User", "description": "User profiles" },
+    "/bookings/{bookingId}": { "schema": "Booking", "description": "Service bookings" },
+    "/services/{serviceId}": { "schema": "Service", "description": "Available services" },
+    "/portfolio/{portfolioId}": { "schema": "Portfolio", "description": "Portfolio items" },
+    "/uploads/{uploadId}": { "schema": "Upload", "description": "User file uploads" },
+    "/contact_messages/{messageId}": { "schema": "ContactMessage", "description": "Contact form submissions" }
+  }
+}

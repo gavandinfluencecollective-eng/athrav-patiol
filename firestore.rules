@@ -1,0 +1,89 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    function isAdmin() {
+      return isAuthenticated() && 
+        ((request.auth.token.email == "gavandinfluencecollective@gmail.com" || request.auth.token.email == "atharvpatil8899@gmail.com") && request.auth.token.email_verified == true);
+    }
+
+    function isValidUser(data) {
+      return data.get('uid', '') is string && data.get('uid', '').size() > 0 &&
+             data.get('name', '') is string && data.get('name', '').size() > 0 && data.get('name', '').size() < 100 &&
+             data.get('email', '') is string && data.get('email', '').size() > 3 && data.get('email', '').size() < 100 &&
+             data.get('role', 'user') in ['admin', 'user'];
+    }
+
+    function isValidBooking(booking) {
+      return booking.get('userId', '') is string &&
+             booking.get('service', '') is string && booking.get('service', '').size() < 100 &&
+             booking.get('date', '') is string && booking.get('date', '').size() < 50 &&
+             booking.get('status', 'Pending') in ['Pending', 'Confirmed', 'Completed'] &&
+             booking.get('createdAt', '') is string;
+    }
+
+    function isValidUpload(upload) {
+      return upload.get('userId', '') is string &&
+             upload.get('fileUrl', '') is string && upload.get('fileUrl', '').size() < 1000 &&
+             upload.get('fileName', '') is string && upload.get('fileName', '').size() < 255 &&
+             upload.get('createdAt', '') is string;
+    }
+
+    function isValidContactMessage(message) {
+      return message.get('name', '') is string && message.get('name', '').size() < 100 &&
+             message.get('email', '') is string && message.get('email', '').size() < 100 &&
+             message.get('message', '') is string && message.get('message', '').size() < 5000 &&
+             message.get('createdAt', '') is string;
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+
+    match /users/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow create: if isAuthenticated() && isOwner(userId) && isValidUser(request.resource.data) && 
+                    (request.resource.data.role == 'user' || (request.resource.data.role == 'admin' && isAdmin()));
+      allow update: if (isAdmin() || (isOwner(userId) && request.resource.data.role == resource.data.role)) && isValidUser(request.resource.data);
+    }
+
+    match /bookings/{bookingId} {
+      allow read: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid && isValidBooking(request.resource.data);
+      allow update: if isAdmin() && isValidBooking(request.resource.data);
+      allow delete: if isAdmin();
+    }
+
+    match /services/{serviceId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /portfolio/{portfolioId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /uploads/{uploadId} {
+      allow read: if isAdmin() || (isAuthenticated() && resource.data.userId == request.auth.uid);
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid && isValidUpload(request.resource.data);
+      allow delete: if isAdmin() || (isAuthenticated() && resource.data.userId == request.auth.uid);
+    }
+
+    match /contact_messages/{messageId} {
+      allow read: if isAdmin();
+      allow create: if isValidContactMessage(request.resource.data);
+      allow delete: if isAdmin();
+    }
+  }
+}
