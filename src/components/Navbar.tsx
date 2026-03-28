@@ -29,9 +29,9 @@ export default function Navbar() {
     <nav className="fixed w-full z-50 bg-black/80 backdrop-blur-md border-b border-white/10">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-20">
-          <Link to="/" className="flex items-center space-x-2">
-            <Camera className="w-8 h-8 text-orange-500" />
-            <span className="text-xl font-bold tracking-tighter text-white">
+          <Link to="/" className="flex items-center space-x-2 shrink-0">
+            <Camera className="w-8 h-8 text-orange-500 shrink-0" />
+            <span className="text-lg sm:text-xl font-bold tracking-tighter text-white whitespace-nowrap">
               ATHARV PATIL <span className="text-orange-500">VIDEOGRAPHY</span>
             </span>
           </Link>

@@ -32,15 +32,15 @@ export default function Services() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-24">
-      <div className="text-center mb-24">
-        <h1 className="text-5xl md:text-7xl font-black tracking-tighter mb-6">SERVICES</h1>
-        <p className="text-gray-400 max-w-2xl mx-auto">
+      <div className="text-center mb-16 sm:mb-24">
+        <h1 className="text-4xl sm:text-5xl md:text-7xl font-black tracking-tighter mb-6">SERVICES</h1>
+        <p className="text-sm sm:text-base text-gray-400 max-w-2xl mx-auto px-4">
           We offer a range of professional videography services designed to capture 
           your vision with cinematic precision.
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8">
         {services.map((service, idx) => (
           <motion.div
             key={idx}
@@ -48,25 +48,25 @@ export default function Services() {
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ delay: idx * 0.1 }}
             viewport={{ once: true }}
-            className="p-8 md:p-12 bg-zinc-900 rounded-[40px] border border-white/10 hover:border-orange-500/50 transition-all group"
+            className="p-6 sm:p-8 md:p-12 bg-zinc-900 rounded-[30px] sm:rounded-[40px] border border-white/10 hover:border-orange-500/50 transition-all group"
           >
-            <div className="flex justify-between items-start mb-8">
-              <div className="w-16 h-16 bg-orange-500/20 rounded-2xl flex items-center justify-center text-orange-500">
-                <service.icon className="w-8 h-8" />
+            <div className="flex justify-between items-start mb-6 sm:mb-8">
+              <div className="w-12 h-12 sm:w-16 sm:h-16 bg-orange-500/20 rounded-2xl flex items-center justify-center text-orange-500">
+                <service.icon className="w-6 h-6 sm:w-8 sm:h-8" />
               </div>
               <div className="text-right">
-                <span className="text-sm text-gray-500 font-bold tracking-widest block mb-1">BOOKING</span>
-                <span className="text-3xl font-black text-white">AVAILABLE</span>
+                <span className="text-[10px] sm:text-sm text-gray-500 font-bold tracking-widest block mb-1">BOOKING</span>
+                <span className="text-xl sm:text-3xl font-black text-white uppercase">AVAILABLE</span>
               </div>
             </div>
 
-            <h3 className="text-3xl font-bold mb-4">{service.title}</h3>
-            <p className="text-gray-400 mb-8 leading-relaxed">{service.description}</p>
+            <h3 className="text-2xl sm:text-3xl font-bold mb-4">{service.title}</h3>
+            <p className="text-sm sm:text-base text-gray-400 mb-8 leading-relaxed">{service.description}</p>
 
-            <ul className="space-y-4 mb-10">
+            <ul className="space-y-3 sm:space-y-4 mb-10">
               {service.features.map((feature, fIdx) => (
-                <li key={fIdx} className="flex items-center gap-3 text-gray-300">
-                  <div className="w-5 h-5 rounded-full bg-green-500/20 flex items-center justify-center text-green-500">
+                <li key={fIdx} className="flex items-center gap-3 text-gray-300 text-sm sm:text-base">
+                  <div className="w-5 h-5 rounded-full bg-green-500/20 flex items-center justify-center text-green-500 shrink-0">
                     <Check className="w-3 h-3" />
                   </div>
                   {feature}
@@ -76,7 +76,7 @@ export default function Services() {
 
             <Link
               to="/contact"
-              className="block w-full py-4 bg-white text-black font-black text-center rounded-2xl hover:bg-orange-500 hover:text-white transition-all transform group-hover:scale-[1.02]"
+              className="block w-full py-4 bg-white text-black font-black text-center rounded-xl sm:rounded-2xl hover:bg-orange-500 hover:text-white transition-all transform group-hover:scale-[1.02] text-sm sm:text-base"
             >
               BOOK THIS SERVICE
             </Link>

@@ -23,10 +23,10 @@ export default function Home() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8 }}
           >
-            <h1 className="text-6xl md:text-8xl font-black tracking-tighter mb-6">
+            <h1 className="text-4xl sm:text-6xl md:text-8xl font-black tracking-tighter mb-6">
               CAPTURING <span className="text-orange-500 italic">MOTION</span>
             </h1>
-            <p className="text-xl md:text-2xl text-gray-300 mb-10 max-w-2xl mx-auto font-light">
+            <p className="text-lg sm:text-xl md:text-2xl text-gray-300 mb-10 max-w-2xl mx-auto font-light">
               Cinematic videography for those who value moments over memories. 
               Specializing in weddings, automotive, and high-end events.
             </p>

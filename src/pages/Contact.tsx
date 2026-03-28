@@ -35,25 +35,25 @@ export default function Contact() {
     <div className="max-w-7xl mx-auto px-4 py-24">
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-24">
         <div>
-          <h1 className="text-5xl md:text-7xl font-black tracking-tighter mb-8">GET IN <span className="text-orange-500">TOUCH</span></h1>
-          <p className="text-gray-400 text-lg mb-12 leading-relaxed">
+          <h1 className="text-4xl sm:text-5xl md:text-7xl font-black tracking-tighter mb-8 uppercase">GET IN <span className="text-orange-500">TOUCH</span></h1>
+          <p className="text-gray-400 text-base sm:text-lg mb-12 leading-relaxed">
             Ready to bring your vision to life? Fill out the form or reach out 
             directly via our contact details. We're excited to work with you!
           </p>
 
-          <div className="space-y-8">
+          <div className="space-y-6 sm:space-y-8">
             {[
               { icon: Mail, label: 'Email Us', value: 'atharvpatil8899@gmail.com' },
               { icon: Phone, label: 'Call Us', value: '+91 95279 88366' },
               { icon: MapPin, label: 'Location', value: 'At.Washi, Pen, Raighar, Maharastra (402107)' },
             ].map((item, idx) => (
-              <div key={idx} className="flex items-center gap-6">
-                <div className="w-14 h-14 bg-zinc-900 rounded-2xl border border-white/10 flex items-center justify-center text-orange-500">
-                  <item.icon className="w-6 h-6" />
+              <div key={idx} className="flex items-center gap-4 sm:gap-6">
+                <div className="w-12 h-12 sm:w-14 sm:h-14 bg-zinc-900 rounded-2xl border border-white/10 flex items-center justify-center text-orange-500 shrink-0">
+                  <item.icon className="w-5 h-5 sm:w-6 sm:h-6" />
                 </div>
-                <div>
-                  <p className="text-xs font-bold text-gray-500 tracking-widest uppercase mb-1">{item.label}</p>
-                  <p className="text-xl font-bold text-white">{item.value}</p>
+                <div className="min-w-0">
+                  <p className="text-[10px] sm:text-xs font-bold text-gray-500 tracking-widest uppercase mb-1">{item.label}</p>
+                  <p className="text-base sm:text-xl font-bold text-white break-words">{item.value}</p>
                 </div>
               </div>
             ))}
