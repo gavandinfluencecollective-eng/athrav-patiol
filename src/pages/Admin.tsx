@@ -70,7 +70,76 @@ export default function Admin() {
     const uploadId = Math.random().toString(36).substring(7);
     setPendingUploads(prev => [...prev, { id: uploadId, name: file.name, progress: 0 }]);
     setUploading(true);
+    setUploadProgress(0);
+
+    // If it's a video, use Cloudinary for better handling of large files with progress
+    if (isVideo) {
+      const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
+      const uploadPreset = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET;
+
+      if (!cloudName || !uploadPreset) {
+        toast.error('Cloudinary configuration missing. Please set VITE_CLOUDINARY_CLOUD_NAME and VITE_CLOUDINARY_UPLOAD_PRESET.');
+        setUploading(false);
+        setPendingUploads(prev => prev.filter(p => p.id !== uploadId));
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('upload_preset', uploadPreset);
+
+      const xhr = new XMLHttpRequest();
+      xhr.open('POST', `https://api.cloudinary.com/v1_1/${cloudName}/video/upload`, true);
+
+      xhr.upload.onprogress = (event) => {
+        if (event.lengthComputable) {
+          const progress = (event.loaded / event.total) * 100;
+          setUploadProgress(progress);
+          setPendingUploads(prev => prev.map(p => p.id === uploadId ? { ...p, progress } : p));
+        }
+      };
+
+      xhr.onload = async () => {
+        if (xhr.status === 200) {
+          const response = JSON.parse(xhr.responseText);
+          const url = response.secure_url;
+          
+          try {
+            await addDoc(collection(db, 'portfolio'), {
+              mediaUrl: url,
+              category: portfolioCategory,
+              type: 'video',
+              createdAt: new Date().toISOString()
+            });
+            toast.success('Video uploaded to Cloudinary and added to portfolio!');
+          } catch (error: any) {
+            console.error('Firestore error:', error);
+            toast.error('Failed to save to database.');
+          } finally {
+            setUploading(false);
+            setPendingUploads(prev => prev.filter(p => p.id !== uploadId));
+            if (fileInputRef.current) fileInputRef.current.value = '';
+          }
+        } else {
+          const error = JSON.parse(xhr.responseText);
+          console.error('Cloudinary error:', error);
+          toast.error('Cloudinary upload failed: ' + (error.error?.message || 'Unknown error'));
+          setUploading(false);
+          setPendingUploads(prev => prev.filter(p => p.id !== uploadId));
+        }
+      };
+
+      xhr.onerror = () => {
+        toast.error('Network error during upload.');
+        setUploading(false);
+        setPendingUploads(prev => prev.filter(p => p.id !== uploadId));
+      };
+
+      xhr.send(formData);
+      return;
+    }
     
+    // Fallback to Firebase for images
     try {
       const storageRef = ref(storage, `portfolio/${Date.now()}_${file.name}`);
       const uploadTask = uploadBytesResumable(storageRef, file);
@@ -408,17 +477,34 @@ export default function Admin() {
                       className="hidden" 
                       accept="image/*,video/*"
                     />
-                    <button 
-                      onClick={() => fileInputRef.current?.click()}
-                      disabled={uploading}
-                      className="w-full py-4 bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-xl transition-all flex items-center justify-center gap-2 disabled:opacity-50"
-                    >
-                      {uploading ? (
-                        <><Loader2 className="w-5 h-5 animate-spin" /> {Math.round(uploadProgress)}%</>
-                      ) : (
-                        <><Upload className="w-5 h-5" /> SELECT & UPLOAD</>
+                    <div className="space-y-3">
+                      <button 
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={uploading}
+                        className="w-full py-4 bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-xl transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                      >
+                        {uploading ? (
+                          <><Loader2 className="w-5 h-5 animate-spin" /> UPLOADING...</>
+                        ) : (
+                          <><Upload className="w-5 h-5" /> SELECT & UPLOAD</>
+                        )}
+                      </button>
+
+                      {uploading && (
+                        <div className="space-y-2">
+                          <div className="flex justify-between text-[10px] font-black uppercase tracking-widest text-gray-500">
+                            <span>Progress</span>
+                            <span>{Math.round(uploadProgress)}%</span>
+                          </div>
+                          <div className="w-full h-2 bg-white/5 rounded-full overflow-hidden">
+                            <div 
+                              className="h-full bg-orange-500 transition-all duration-300"
+                              style={{ width: `${uploadProgress}%` }}
+                            />
+                          </div>
+                        </div>
                       )}
-                    </button>
+                    </div>
                   </div>
                 </div>
               </div>
