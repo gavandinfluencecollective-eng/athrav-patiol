@@ -12,6 +12,8 @@ export interface Booking {
   userId: string;
   service: string;
   date: string;
+  time: string;
+  location: string;
   status: 'Pending' | 'Confirmed' | 'Completed';
   notes?: string;
   createdAt: string;

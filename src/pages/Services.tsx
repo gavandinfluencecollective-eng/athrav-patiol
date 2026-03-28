@@ -1,8 +1,25 @@
 import { motion } from 'motion/react';
 import { Star, Check, Camera, Play, Car } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
+import { useState } from 'react';
+import { useAuth } from '../hooks/useAuth';
+import BookingModal from '../components/BookingModal';
 
 export default function Services() {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const [isBookingOpen, setIsBookingOpen] = useState(false);
+  const [selectedService, setSelectedService] = useState('Wedding Shoot');
+
+  const handleBookClick = (serviceName: string) => {
+    if (!user) {
+      navigate('/login');
+      return;
+    }
+    setSelectedService(serviceName);
+    setIsBookingOpen(true);
+  };
+
   const services = [
     {
       title: 'Wedding Shoot',
@@ -74,15 +91,21 @@ export default function Services() {
               ))}
             </ul>
 
-            <Link
-              to="/contact"
+            <button
+              onClick={() => handleBookClick(service.title)}
               className="block w-full py-4 bg-white text-black font-black text-center rounded-xl sm:rounded-2xl hover:bg-orange-500 hover:text-white transition-all transform group-hover:scale-[1.02] text-sm sm:text-base"
             >
               BOOK THIS SERVICE
-            </Link>
+            </button>
           </motion.div>
         ))}
       </div>
+
+      <BookingModal 
+        isOpen={isBookingOpen} 
+        onClose={() => setIsBookingOpen(false)} 
+        initialService={selectedService}
+      />
     </div>
   );
 }

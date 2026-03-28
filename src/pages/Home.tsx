@@ -1,8 +1,25 @@
 import { motion } from 'motion/react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { ArrowRight, Camera, Play, Star } from 'lucide-react';
+import { useState } from 'react';
+import { useAuth } from '../hooks/useAuth';
+import BookingModal from '../components/BookingModal';
 
 export default function Home() {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const [isBookingOpen, setIsBookingOpen] = useState(false);
+  const [selectedService, setSelectedService] = useState('Wedding Shoot');
+
+  const handleBookClick = (serviceName?: string) => {
+    if (!user) {
+      navigate('/login');
+      return;
+    }
+    if (serviceName) setSelectedService(serviceName);
+    setIsBookingOpen(true);
+  };
+
   return (
     <div className="relative">
       {/* Hero Section */}
@@ -31,12 +48,12 @@ export default function Home() {
               Specializing in weddings, automotive, and high-end events.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-              <Link
-                to="/contact"
+              <button
+                onClick={() => handleBookClick()}
                 className="px-8 py-4 bg-orange-500 text-white font-bold rounded-full hover:bg-orange-600 transition-all transform hover:scale-105 flex items-center gap-2"
               >
                 BOOK A SHOOT <ArrowRight className="w-5 h-5" />
-              </Link>
+              </button>
               <Link
                 to="/portfolio"
                 className="px-8 py-4 bg-white/10 backdrop-blur-md text-white font-bold rounded-full hover:bg-white/20 transition-all border border-white/20 flex items-center gap-2"
@@ -75,14 +92,23 @@ export default function Home() {
                 <service.icon className="w-12 h-12 text-orange-500 mb-6" />
                 <h3 className="text-2xl font-bold mb-2">{service.title}</h3>
                 <p className="text-gray-400 mb-6">Professional cinematic coverage for your special moments.</p>
-                <Link to="/contact" className="text-sm font-bold tracking-widest text-orange-500 hover:text-orange-400">
+                <button 
+                  onClick={() => handleBookClick(service.title)}
+                  className="text-sm font-bold tracking-widest text-orange-500 hover:text-orange-400"
+                >
                   BOOK NOW
-                </Link>
+                </button>
               </motion.div>
             ))}
           </div>
         </div>
       </section>
+
+      <BookingModal 
+        isOpen={isBookingOpen} 
+        onClose={() => setIsBookingOpen(false)} 
+        initialService={selectedService}
+      />
 
       {/* Why Us */}
       <section className="py-24 bg-zinc-950">

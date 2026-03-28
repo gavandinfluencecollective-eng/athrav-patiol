@@ -27,7 +27,7 @@ export default function Admin() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    const unsubB = onSnapshot(query(collection(db, 'bookings'), orderBy('createdAt', 'desc')), (s) => setBookings(s.docs.map(d => ({ id: d.id, ...d.data() } as Booking))), (e) => handleFirestoreError(e, OperationType.GET, 'bookings'));
+    const unsubB = onSnapshot(collection(db, 'bookings'), (s) => setBookings(s.docs.map(d => ({ id: d.id, ...d.data() } as Booking))), (e) => handleFirestoreError(e, OperationType.GET, 'bookings'));
     const unsubU = onSnapshot(collection(db, 'users'), (s) => setUsers(s.docs.map(d => ({ ...d.data() } as UserProfile))), (e) => handleFirestoreError(e, OperationType.GET, 'users'));
     const unsubS = onSnapshot(collection(db, 'services'), (s) => setServices(s.docs.map(d => ({ id: d.id, ...d.data() } as Service))), (e) => handleFirestoreError(e, OperationType.GET, 'services'));
     const unsubP = onSnapshot(collection(db, 'portfolio'), (s) => setPortfolio(s.docs.map(d => ({ id: d.id, ...d.data() } as PortfolioItem))), (e) => handleFirestoreError(e, OperationType.GET, 'portfolio'));
@@ -140,20 +140,29 @@ export default function Admin() {
                 <tr>
                   <th className="px-6 py-4 text-sm font-bold text-gray-400">USER</th>
                   <th className="px-6 py-4 text-sm font-bold text-gray-400">SERVICE</th>
-                  <th className="px-6 py-4 text-sm font-bold text-gray-400">DATE</th>
+                  <th className="px-6 py-4 text-sm font-bold text-gray-400">DATE & TIME</th>
+                  <th className="px-6 py-4 text-sm font-bold text-gray-400">LOCATION</th>
                   <th className="px-6 py-4 text-sm font-bold text-gray-400">STATUS</th>
                   <th className="px-6 py-4 text-sm font-bold text-gray-400">ACTIONS</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/5">
-                {bookings.map((b) => (
+                {bookings.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="px-6 py-12 text-center text-gray-500">No bookings found</td>
+                  </tr>
+                ) : bookings.map((b) => (
                   <tr key={b.id} className="hover:bg-white/5 transition-colors">
                     <td className="px-6 py-4">
                       <p className="font-bold">{b.userName}</p>
                       <p className="text-xs text-gray-500">{b.userEmail}</p>
                     </td>
                     <td className="px-6 py-4 font-medium">{b.service}</td>
-                    <td className="px-6 py-4 text-sm text-gray-400">{formatDate(b.date)}</td>
+                    <td className="px-6 py-4">
+                      <p className="text-sm text-gray-400">{formatDate(b.date)}</p>
+                      <p className="text-xs text-gray-500">{b.time || 'N/A'}</p>
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-400">{b.location || 'N/A'}</td>
                     <td className="px-6 py-4">
                       <span className={cn(
                         "px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest",
@@ -178,7 +187,9 @@ export default function Admin() {
 
             {/* Mobile Card View */}
             <div className="md:hidden divide-y divide-white/5">
-              {bookings.map((b) => (
+              {bookings.length === 0 ? (
+                <div className="p-12 text-center text-gray-500">No bookings found</div>
+              ) : bookings.map((b) => (
                 <div key={b.id} className="p-6 space-y-4">
                   <div className="flex justify-between items-start">
                     <div>
@@ -200,8 +211,13 @@ export default function Admin() {
                       <p className="font-medium">{b.service}</p>
                     </div>
                     <div>
-                      <p className="text-gray-500 font-bold uppercase text-[10px] tracking-widest mb-1">Date</p>
+                      <p className="text-gray-500 font-bold uppercase text-[10px] tracking-widest mb-1">Date & Time</p>
                       <p className="font-medium">{formatDate(b.date)}</p>
+                      <p className="text-xs text-gray-500">{b.time || 'N/A'}</p>
+                    </div>
+                    <div className="col-span-2">
+                      <p className="text-gray-500 font-bold uppercase text-[10px] tracking-widest mb-1">Location</p>
+                      <p className="font-medium">{b.location || 'N/A'}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-2 pt-2">

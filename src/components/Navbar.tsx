@@ -1,7 +1,7 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { motion } from 'motion/react';
+import { motion, AnimatePresence } from 'motion/react';
 import { Camera, Menu, X, User, LogOut, Settings } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { auth } from '../firebase';
 import { signOut } from 'firebase/auth';
@@ -13,8 +13,19 @@ export default function Navbar() {
   const location = useLocation();
   const navigate = useNavigate();
 
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth >= 768) {
+        setIsOpen(false);
+      }
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   const handleLogout = async () => {
     await signOut(auth);
+    setIsOpen(false);
     navigate('/');
   };
 
@@ -26,7 +37,7 @@ export default function Navbar() {
   ];
 
   return (
-    <nav className="fixed w-full z-50 bg-black/80 backdrop-blur-md border-b border-white/10">
+    <nav className="fixed w-full z-[100] bg-black/80 backdrop-blur-md border-b border-white/10">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-20">
           <Link to="/" className="flex items-center space-x-2 shrink-0">
@@ -91,7 +102,7 @@ export default function Navbar() {
           <div className="md:hidden">
             <button
               onClick={() => setIsOpen(!isOpen)}
-              className="text-gray-400 hover:text-white"
+              className="p-2 text-gray-400 hover:text-white transition-colors"
             >
               {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
             </button>
@@ -100,61 +111,92 @@ export default function Navbar() {
       </div>
 
       {/* Mobile Menu */}
-      {isOpen && (
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="md:hidden bg-black border-b border-white/10 px-4 py-6 space-y-4"
-        >
-          {navLinks.map((link) => (
-            <Link
-              key={link.path}
-              to={link.path}
+      <AnimatePresence>
+        {isOpen && (
+          <>
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
               onClick={() => setIsOpen(false)}
-              className={cn(
-                "block text-lg font-medium",
-                location.pathname === link.path ? "text-orange-500" : "text-gray-400"
-              )}
+              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[-1] md:hidden"
+            />
+            
+            {/* Drawer */}
+            <motion.div
+              initial={{ x: '100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+              className="fixed top-20 right-0 bottom-0 w-[280px] bg-zinc-950 border-l border-white/10 p-6 flex flex-col gap-6 md:hidden shadow-2xl"
             >
-              {link.name}
-            </Link>
-          ))}
-          {user ? (
-            <>
-              <Link
-                to="/dashboard"
-                onClick={() => setIsOpen(false)}
-                className="block text-lg font-medium text-gray-400"
-              >
-                Dashboard
-              </Link>
-              {isAdmin && (
-                <Link
-                  to="/admin"
-                  onClick={() => setIsOpen(false)}
-                  className="block text-lg font-medium text-gray-400"
-                >
-                  Admin Panel
-                </Link>
-              )}
-              <button
-                onClick={handleLogout}
-                className="block text-lg font-medium text-gray-400"
-              >
-                Logout
-              </button>
-            </>
-          ) : (
-            <Link
-              to="/login"
-              onClick={() => setIsOpen(false)}
-              className="block w-full py-3 bg-orange-500 text-white text-center font-bold rounded-lg"
-            >
-              LOGIN
-            </Link>
-          )}
-        </motion.div>
-      )}
+              <div className="space-y-2">
+                <p className="text-[10px] font-bold text-gray-500 uppercase tracking-[0.2em] mb-4">Navigation</p>
+                {navLinks.map((link) => (
+                  <Link
+                    key={link.path}
+                    to={link.path}
+                    onClick={() => setIsOpen(false)}
+                    className={cn(
+                      "block py-3 px-4 rounded-xl text-lg font-bold transition-all",
+                      location.pathname === link.path 
+                        ? "bg-orange-500 text-white shadow-lg shadow-orange-500/20" 
+                        : "text-gray-400 hover:bg-white/5 hover:text-white"
+                    )}
+                  >
+                    {link.name}
+                  </Link>
+                ))}
+              </div>
+
+              <div className="space-y-2 pt-6 border-t border-white/10">
+                <p className="text-[10px] font-bold text-gray-500 uppercase tracking-[0.2em] mb-4">Account</p>
+                {user ? (
+                  <>
+                    <Link
+                      to="/dashboard"
+                      onClick={() => setIsOpen(false)}
+                      className={cn(
+                        "flex items-center gap-3 py-3 px-4 rounded-xl text-lg font-bold transition-all",
+                        location.pathname === '/dashboard' ? "text-orange-500" : "text-gray-400 hover:text-white"
+                      )}
+                    >
+                      <User className="w-5 h-5" /> Dashboard
+                    </Link>
+                    {isAdmin && (
+                      <Link
+                        to="/admin"
+                        onClick={() => setIsOpen(false)}
+                        className={cn(
+                          "flex items-center gap-3 py-3 px-4 rounded-xl text-lg font-bold transition-all",
+                          location.pathname === '/admin' ? "text-orange-500" : "text-gray-400 hover:text-white"
+                        )}
+                      >
+                        <Settings className="w-5 h-5" /> Admin Panel
+                      </Link>
+                    )}
+                    <button
+                      onClick={handleLogout}
+                      className="flex items-center gap-3 w-full py-3 px-4 rounded-xl text-lg font-bold text-red-500 hover:bg-red-500/10 transition-all"
+                    >
+                      <LogOut className="w-5 h-5" /> Logout
+                    </button>
+                  </>
+                ) : (
+                  <Link
+                    to="/login"
+                    onClick={() => setIsOpen(false)}
+                    className="block w-full py-4 bg-orange-500 text-white text-center font-bold rounded-xl shadow-lg shadow-orange-500/20"
+                  >
+                    LOGIN
+                  </Link>
+                )}
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </nav>
   );
 }

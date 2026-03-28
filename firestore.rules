@@ -28,6 +28,8 @@ service cloud.firestore {
       return booking.get('userId', '') is string &&
              booking.get('service', '') is string && booking.get('service', '').size() < 100 &&
              booking.get('date', '') is string && booking.get('date', '').size() < 50 &&
+             booking.get('time', '') is string && booking.get('time', '').size() < 50 &&
+             booking.get('location', '') is string && booking.get('location', '').size() < 200 &&
              booking.get('status', 'Pending') in ['Pending', 'Confirmed', 'Completed'] &&
              booking.get('createdAt', '') is string;
     }
