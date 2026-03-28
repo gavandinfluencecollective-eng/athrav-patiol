@@ -2,7 +2,7 @@ import { useState, useEffect, createContext, useContext, ReactNode } from 'react
 import { auth, db } from '../firebase';
 import { onAuthStateChanged, User } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
-import { UserProfile } from '../types';
+import { UserProfile, UserRole } from '../types';
 
 interface AuthContextType {
   user: User | null;
@@ -26,7 +26,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const docSnap = await getDoc(docRef);
         
         if (docSnap.exists()) {
-          setProfile(docSnap.data() as UserProfile);
+          const existingProfile = docSnap.data() as UserProfile;
+          const isAdminEmail = user.email === 'gavandinfluencecollective@gmail.com' || user.email === 'atharvpatil8899@gmail.com';
+          
+          if (isAdminEmail && existingProfile.role !== 'admin') {
+            const updatedProfile = { ...existingProfile, role: 'admin' as UserRole };
+            await setDoc(docRef, updatedProfile);
+            setProfile(updatedProfile);
+          } else {
+            setProfile(existingProfile);
+          }
         } else {
           // Create default profile if it doesn't exist
           const newProfile: UserProfile = {

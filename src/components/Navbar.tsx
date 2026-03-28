@@ -39,7 +39,7 @@ export default function Navbar() {
   return (
     <nav className={cn(
       "fixed w-full z-[100] transition-all duration-300 border-b border-white/10",
-      isOpen ? "bg-black" : "bg-black/80 backdrop-blur-md"
+      isOpen ? "bg-black" : "bg-black md:bg-black/80 md:backdrop-blur-md"
     )}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-20">
@@ -123,7 +123,7 @@ export default function Navbar() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setIsOpen(false)}
-              className="fixed inset-0 bg-black/80 backdrop-blur-md z-[-1] md:hidden"
+              className="fixed inset-0 bg-black/80 backdrop-blur-md z-[90] md:hidden"
             />
             
             {/* Drawer */}
@@ -132,24 +132,34 @@ export default function Navbar() {
               animate={{ x: 0 }}
               exit={{ x: '100%' }}
               transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className="fixed top-20 right-0 bottom-0 w-[280px] bg-black border-l border-white/10 p-6 flex flex-col gap-6 md:hidden shadow-2xl"
+              className="fixed top-0 right-0 bottom-0 w-[280px] bg-black border-l border-white/10 p-6 flex flex-col gap-6 md:hidden shadow-2xl z-[100]"
             >
+              <div className="flex justify-end mb-4">
+                <button
+                  onClick={() => setIsOpen(false)}
+                  className="p-2 text-gray-400 hover:text-white"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
               <div className="space-y-2">
                 <p className="text-[10px] font-bold text-gray-500 uppercase tracking-[0.2em] mb-4">Navigation</p>
                 {navLinks.map((link) => (
-                  <Link
+                  <button
                     key={link.path}
-                    to={link.path}
-                    onClick={() => setIsOpen(false)}
+                    onClick={() => {
+                      setIsOpen(false);
+                      navigate(link.path);
+                    }}
                     className={cn(
-                      "block py-3 px-4 rounded-xl text-lg font-bold transition-all",
+                      "block w-full text-left py-3 px-4 rounded-xl text-lg font-bold transition-all",
                       location.pathname === link.path 
                         ? "bg-orange-500 text-white shadow-lg shadow-orange-500/20" 
                         : "text-gray-400 hover:bg-white/5 hover:text-white"
                     )}
                   >
                     {link.name}
-                  </Link>
+                  </button>
                 ))}
               </div>
 
@@ -157,27 +167,31 @@ export default function Navbar() {
                 <p className="text-[10px] font-bold text-gray-500 uppercase tracking-[0.2em] mb-4">Account</p>
                 {user ? (
                   <>
-                    <Link
-                      to="/dashboard"
-                      onClick={() => setIsOpen(false)}
+                    <button
+                      onClick={() => {
+                        setIsOpen(false);
+                        navigate('/dashboard');
+                      }}
                       className={cn(
-                        "flex items-center gap-3 py-3 px-4 rounded-xl text-lg font-bold transition-all",
+                        "flex items-center gap-3 w-full py-3 px-4 rounded-xl text-lg font-bold transition-all",
                         location.pathname === '/dashboard' ? "text-orange-500" : "text-gray-400 hover:text-white"
                       )}
                     >
                       <User className="w-5 h-5" /> Dashboard
-                    </Link>
+                    </button>
                     {isAdmin && (
-                      <Link
-                        to="/admin"
-                        onClick={() => setIsOpen(false)}
+                      <button
+                        onClick={() => {
+                          setIsOpen(false);
+                          navigate('/admin');
+                        }}
                         className={cn(
-                          "flex items-center gap-3 py-3 px-4 rounded-xl text-lg font-bold transition-all",
+                          "flex items-center gap-3 w-full py-3 px-4 rounded-xl text-lg font-bold transition-all",
                           location.pathname === '/admin' ? "text-orange-500" : "text-gray-400 hover:text-white"
                         )}
                       >
                         <Settings className="w-5 h-5" /> Admin Panel
-                      </Link>
+                      </button>
                     )}
                     <button
                       onClick={handleLogout}
@@ -187,13 +201,15 @@ export default function Navbar() {
                     </button>
                   </>
                 ) : (
-                  <Link
-                    to="/login"
-                    onClick={() => setIsOpen(false)}
+                  <button
+                    onClick={() => {
+                      setIsOpen(false);
+                      navigate('/login');
+                    }}
                     className="block w-full py-4 bg-orange-500 text-white text-center font-bold rounded-xl shadow-lg shadow-orange-500/20"
                   >
                     LOGIN
-                  </Link>
+                  </button>
                 )}
               </div>
             </motion.div>

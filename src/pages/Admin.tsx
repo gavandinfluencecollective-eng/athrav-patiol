@@ -1,16 +1,20 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { db, storage, handleFirestoreError, OperationType } from '../firebase';
 import { collection, onSnapshot, updateDoc, doc, deleteDoc, addDoc, query, orderBy } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { 
   Users, Calendar, Camera, FileUp, MessageSquare, 
-  Check, X, Trash2, Plus, Edit2, LayoutDashboard, Upload, Loader2, Play
+  Check, X, Trash2, Plus, Edit2, LayoutDashboard, Upload, Loader2, Play, AlertCircle
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Booking, UserProfile, Service, PortfolioItem, UserUpload, ContactMessage } from '../types';
 import { formatDate, cn } from '../lib/utils';
+import { useAuth } from '../hooks/useAuth';
+import { useNavigate } from 'react-router-dom';
 
 export default function Admin() {
+  const { user, isAdmin, loading: authLoading } = useAuth();
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<'bookings' | 'users' | 'services' | 'portfolio' | 'uploads' | 'messages'>('bookings');
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [users, setUsers] = useState<UserProfile[]>([]);
@@ -21,12 +25,22 @@ export default function Admin() {
 
   // Portfolio Management State
   const [uploading, setUploading] = useState(false);
-  const [pendingUploads, setPendingUploads] = useState<{ id: string, name: string }[]>([]);
+  const [uploadProgress, setUploadProgress] = useState<number>(0);
+  const [pendingUploads, setPendingUploads] = useState<{ id: string, name: string, progress: number }[]>([]);
   const [portfolioCategory, setPortfolioCategory] = useState<'Wedding' | 'Cars' | 'Events'>('Wedding');
-  const [portfolioType, setPortfolioType] = useState<'image' | 'video'>('video');
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const uploadInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
+    if (!authLoading && !isAdmin) {
+      navigate('/');
+      return;
+    }
+  }, [isAdmin, authLoading, navigate]);
+
+  useEffect(() => {
+    if (!isAdmin) return;
+
     const unsubB = onSnapshot(collection(db, 'bookings'), (s) => setBookings(s.docs.map(d => ({ id: d.id, ...d.data() } as Booking))), (e) => handleFirestoreError(e, OperationType.GET, 'bookings'));
     const unsubU = onSnapshot(collection(db, 'users'), (s) => setUsers(s.docs.map(d => ({ ...d.data() } as UserProfile))), (e) => handleFirestoreError(e, OperationType.GET, 'users'));
     const unsubS = onSnapshot(collection(db, 'services'), (s) => setServices(s.docs.map(d => ({ id: d.id, ...d.data() } as Service))), (e) => handleFirestoreError(e, OperationType.GET, 'services'));
@@ -37,35 +51,97 @@ export default function Admin() {
     return () => {
       unsubB(); unsubU(); unsubS(); unsubP(); unsubUp(); unsubM();
     };
-  }, []);
+  }, [isAdmin]);
 
   const handlePortfolioUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    // Auto-detect type
+    const isVideo = file.type.startsWith('video/');
+    const isImage = file.type.startsWith('image/');
+    
+    if (!isVideo && !isImage) {
+      toast.error('Please upload only images or videos.');
+      return;
+    }
+
+    const detectedType = isVideo ? 'video' : 'image';
     const uploadId = Math.random().toString(36).substring(7);
-    setPendingUploads(prev => [...prev, { id: uploadId, name: file.name }]);
+    setPendingUploads(prev => [...prev, { id: uploadId, name: file.name, progress: 0 }]);
     setUploading(true);
     
     try {
       const storageRef = ref(storage, `portfolio/${Date.now()}_${file.name}`);
-      await uploadBytes(storageRef, file);
-      const url = await getDownloadURL(storageRef);
+      const uploadTask = uploadBytesResumable(storageRef, file);
 
-      await addDoc(collection(db, 'portfolio'), {
-        mediaUrl: url,
-        category: portfolioCategory,
-        type: portfolioType,
-        createdAt: new Date().toISOString()
-      });
-
-      toast.success('Portfolio item added successfully!');
-      if (fileInputRef.current) fileInputRef.current.value = '';
+      uploadTask.on('state_changed', 
+        (snapshot) => {
+          const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+          setUploadProgress(progress);
+          setPendingUploads(prev => prev.map(p => p.id === uploadId ? { ...p, progress } : p));
+        }, 
+        (error) => {
+          toast.error('Upload failed: ' + error.message);
+          setUploading(false);
+          setPendingUploads(prev => prev.filter(p => p.id !== uploadId));
+        }, 
+        async () => {
+          const url = await getDownloadURL(uploadTask.snapshot.ref);
+          await addDoc(collection(db, 'portfolio'), {
+            mediaUrl: url,
+            category: portfolioCategory,
+            type: detectedType,
+            createdAt: new Date().toISOString()
+          });
+          toast.success('Portfolio item added successfully!');
+          setUploading(false);
+          setPendingUploads(prev => prev.filter(p => p.id !== uploadId));
+          if (fileInputRef.current) fileInputRef.current.value = '';
+        }
+      );
     } catch (error: any) {
       toast.error('Upload failed: ' + error.message);
-    } finally {
       setUploading(false);
       setPendingUploads(prev => prev.filter(p => p.id !== uploadId));
+    }
+  };
+
+  const handleGeneralUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+
+    setUploading(true);
+    try {
+      const storageRef = ref(storage, `uploads/${Date.now()}_${file.name}`);
+      const uploadTask = uploadBytesResumable(storageRef, file);
+
+      uploadTask.on('state_changed', 
+        (snapshot) => {
+          const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+          setUploadProgress(progress);
+        },
+        (error) => {
+          toast.error('Upload failed: ' + error.message);
+          setUploading(false);
+        },
+        async () => {
+          const url = await getDownloadURL(uploadTask.snapshot.ref);
+          await addDoc(collection(db, 'uploads'), {
+            userId: user.uid,
+            userName: user.displayName || 'Admin',
+            fileUrl: url,
+            fileName: file.name,
+            createdAt: new Date().toISOString()
+          });
+          toast.success('File uploaded to storage successfully!');
+          setUploading(false);
+          if (uploadInputRef.current) uploadInputRef.current.value = '';
+        }
+      );
+    } catch (error: any) {
+      toast.error('Upload failed: ' + error.message);
+      setUploading(false);
     }
   };
 
@@ -103,6 +179,9 @@ export default function Admin() {
     { id: 'uploads', label: 'Uploads', icon: FileUp },
     { id: 'messages', label: 'Messages', icon: MessageSquare },
   ];
+
+  if (authLoading) return <div className="p-12 text-center">Checking permissions...</div>;
+  if (!isAdmin) return null;
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-12">
@@ -320,23 +399,13 @@ export default function Admin() {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Type</label>
-                    <select 
-                      value={portfolioType} 
-                      onChange={(e) => setPortfolioType(e.target.value as any)}
-                      className="w-full bg-black border border-white/10 rounded-xl py-3 px-4 outline-none focus:border-orange-500"
-                    >
-                      <option value="video">Video</option>
-                      <option value="image">Image</option>
-                    </select>
-                  </div>
-                  <div className="pt-4">
+                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Upload File (Auto-detects Type)</label>
                     <input 
                       type="file" 
                       ref={fileInputRef}
                       onChange={handlePortfolioUpload}
                       className="hidden" 
-                      accept={portfolioType === 'video' ? 'video/*' : 'image/*'}
+                      accept="image/*,video/*"
                     />
                     <button 
                       onClick={() => fileInputRef.current?.click()}
@@ -344,7 +413,7 @@ export default function Admin() {
                       className="w-full py-4 bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-xl transition-all flex items-center justify-center gap-2 disabled:opacity-50"
                     >
                       {uploading ? (
-                        <><Loader2 className="w-5 h-5 animate-spin" /> UPLOADING...</>
+                        <><Loader2 className="w-5 h-5 animate-spin" /> {Math.round(uploadProgress)}%</>
                       ) : (
                         <><Upload className="w-5 h-5" /> SELECT & UPLOAD</>
                       )}
@@ -358,10 +427,10 @@ export default function Admin() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {/* Pending Uploads */}
                   {pendingUploads.map((pending) => (
-                    <div key={pending.id} className="aspect-video bg-zinc-800 rounded-2xl flex flex-col items-center justify-center border border-dashed border-white/20 animate-pulse">
+                    <div key={pending.id} className="aspect-video bg-zinc-800 rounded-2xl flex flex-col items-center justify-center border border-dashed border-white/20">
                       <Loader2 className="w-8 h-8 text-orange-500 animate-spin mb-2" />
                       <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest truncate max-w-[80%]">
-                        Uploading {pending.name}
+                        {Math.round(pending.progress)}% - {pending.name}
                       </span>
                     </div>
                   ))}
@@ -369,9 +438,7 @@ export default function Admin() {
                   {portfolio.map((item) => (
                     <div key={item.id} className="group relative aspect-video bg-black rounded-2xl overflow-hidden border border-white/5">
                       {item.type === 'video' ? (
-                        <div className="w-full h-full flex items-center justify-center bg-zinc-800">
-                          <Play className="w-12 h-12 text-white/20" />
-                        </div>
+                        <video src={item.mediaUrl} className="w-full h-full object-cover" muted loop onMouseOver={e => e.currentTarget.play()} onMouseOut={e => e.currentTarget.pause()} />
                       ) : (
                         <img src={item.mediaUrl} alt="" className="w-full h-full object-cover" />
                       )}
@@ -393,23 +460,53 @@ export default function Admin() {
         )}
 
         {activeTab === 'uploads' && (
-          <div className="p-4 sm:p-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-            {uploads.map((up) => (
-              <div key={up.id} className="p-6 bg-black/40 rounded-2xl border border-white/5">
-                <div className="flex justify-between items-start mb-4 gap-2">
-                  <div className="min-w-0">
-                    <h3 className="font-bold truncate">{up.fileName}</h3>
-                    <p className="text-[10px] sm:text-xs text-gray-500">By {up.userName}</p>
-                  </div>
-                  <a href={up.fileUrl} target="_blank" rel="noreferrer" className="p-2 bg-orange-500/10 text-orange-500 rounded-lg hover:bg-orange-500/20 shrink-0">
-                    <FileUp className="w-4 h-4" />
-                  </a>
-                </div>
-                <button onClick={() => deleteItem('uploads', up.id!)} className="text-red-500 text-xs font-bold flex items-center gap-1 hover:underline">
-                  <Trash2 className="w-3 h-3" /> DELETE FILE
+          <div className="p-4 sm:p-8">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
+              <h2 className="text-xl sm:text-2xl font-bold">Storage Uploads</h2>
+              <div className="w-full sm:w-auto">
+                <input 
+                  type="file" 
+                  ref={uploadInputRef}
+                  onChange={handleGeneralUpload}
+                  className="hidden" 
+                />
+                <button 
+                  onClick={() => uploadInputRef.current?.click()}
+                  disabled={uploading}
+                  className="w-full sm:w-auto px-6 py-2 bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-xl transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                >
+                  {uploading ? (
+                    <><Loader2 className="w-4 h-4 animate-spin" /> {Math.round(uploadProgress)}%</>
+                  ) : (
+                    <><Upload className="w-4 h-4" /> UPLOAD FILE</>
+                  )}
                 </button>
               </div>
-            ))}
+            </div>
+            
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+              {uploads.length === 0 ? (
+                <div className="col-span-full py-12 text-center bg-black/20 rounded-2xl border border-dashed border-white/10">
+                  <AlertCircle className="w-12 h-12 text-gray-600 mx-auto mb-4 opacity-20" />
+                  <p className="text-gray-500">No general uploads yet.</p>
+                </div>
+              ) : uploads.map((up) => (
+                <div key={up.id} className="p-6 bg-black/40 rounded-2xl border border-white/5">
+                  <div className="flex justify-between items-start mb-4 gap-2">
+                    <div className="min-w-0">
+                      <h3 className="font-bold truncate">{up.fileName}</h3>
+                      <p className="text-[10px] sm:text-xs text-gray-500">By {up.userName}</p>
+                    </div>
+                    <a href={up.fileUrl} target="_blank" rel="noreferrer" className="p-2 bg-orange-500/10 text-orange-500 rounded-lg hover:bg-orange-500/20 shrink-0">
+                      <FileUp className="w-4 h-4" />
+                    </a>
+                  </div>
+                  <button onClick={() => deleteItem('uploads', up.id!)} className="text-red-500 text-xs font-bold flex items-center gap-1 hover:underline">
+                    <Trash2 className="w-3 h-3" /> DELETE FILE
+                  </button>
+                </div>
+              ))}
+            </div>
           </div>
         )}
 

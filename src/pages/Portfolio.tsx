@@ -6,12 +6,15 @@ import { PortfolioItem } from '../types';
 import { Play, Maximize2, Trash2, X } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { toast } from 'sonner';
+import { cn } from '../lib/utils';
+import BookingModal from '../components/BookingModal';
 
 export default function Portfolio() {
-  const { isAdmin } = useAuth();
+  const { isAdmin, user } = useAuth();
   const [items, setItems] = useState<PortfolioItem[]>([]);
   const [filter, setFilter] = useState<'All' | 'Wedding' | 'Cars' | 'Events'>('All');
   const [selectedItem, setSelectedItem] = useState<PortfolioItem | null>(null);
+  const [isBookingOpen, setIsBookingOpen] = useState(false);
 
   useEffect(() => {
     const unsub = onSnapshot(collection(db, 'portfolio'), (snapshot) => {
@@ -61,6 +64,15 @@ export default function Portfolio() {
         ))}
       </div>
 
+      <div className="flex justify-center mb-16">
+        <button 
+          onClick={() => setIsBookingOpen(true)}
+          className="px-12 py-4 bg-orange-500 text-white font-black rounded-2xl hover:bg-orange-600 transition-all transform hover:scale-105 shadow-xl shadow-orange-500/20"
+        >
+          BOOK A SHOOT NOW
+        </button>
+      </div>
+
       {filteredItems.length === 0 ? (
         <div className="text-center py-24 bg-zinc-900/50 rounded-[40px] border border-white/5">
           <Play className="w-16 h-16 text-gray-600 mx-auto mb-6 opacity-20" />
@@ -82,8 +94,19 @@ export default function Portfolio() {
                 onClick={() => setSelectedItem(item)}
               >
                 {item.type === 'video' ? (
-                  <div className="w-full h-full bg-zinc-800 flex items-center justify-center">
-                    <Play className="w-16 h-16 text-white/20" />
+                  <div className="w-full h-full bg-black">
+                    <video 
+                      src={item.mediaUrl} 
+                      className="w-full h-full object-cover" 
+                      muted 
+                      loop 
+                      onMouseOver={e => e.currentTarget.play()} 
+                      onMouseOut={e => e.currentTarget.pause()}
+                      playsInline
+                    />
+                    <div className="absolute top-4 right-4 bg-orange-500/80 p-2 rounded-full">
+                      <Play className="w-4 h-4 text-white fill-current" />
+                    </div>
                   </div>
                 ) : (
                   <img 
@@ -150,11 +173,11 @@ export default function Portfolio() {
           </motion.div>
         </div>
       )}
+
+      <BookingModal 
+        isOpen={isBookingOpen} 
+        onClose={() => setIsBookingOpen(false)} 
+      />
     </div>
   );
-}
-
-// Utility function for conditional classes (since I can't import it easily in this block without repeating)
-function cn(...inputs: any[]) {
-  return inputs.filter(Boolean).join(' ');
 }
