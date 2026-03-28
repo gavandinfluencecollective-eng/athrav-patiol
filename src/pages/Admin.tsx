@@ -82,6 +82,7 @@ export default function Admin() {
           setPendingUploads(prev => prev.map(p => p.id === uploadId ? { ...p, progress } : p));
         }, 
         (error) => {
+          console.error('Portfolio upload error:', error);
           toast.error('Upload failed: ' + error.message);
           setUploading(false);
           setPendingUploads(prev => prev.filter(p => p.id !== uploadId));
