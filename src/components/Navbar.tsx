@@ -37,7 +37,10 @@ export default function Navbar() {
   ];
 
   return (
-    <nav className="fixed w-full z-[100] bg-black/80 backdrop-blur-md border-b border-white/10">
+    <nav className={cn(
+      "fixed w-full z-[100] transition-all duration-300 border-b border-white/10",
+      isOpen ? "bg-black" : "bg-black/80 backdrop-blur-md"
+    )}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-20">
           <Link to="/" className="flex items-center space-x-2 shrink-0">
@@ -120,7 +123,7 @@ export default function Navbar() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setIsOpen(false)}
-              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[-1] md:hidden"
+              className="fixed inset-0 bg-black/80 backdrop-blur-md z-[-1] md:hidden"
             />
             
             {/* Drawer */}
@@ -129,7 +132,7 @@ export default function Navbar() {
               animate={{ x: 0 }}
               exit={{ x: '100%' }}
               transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className="fixed top-20 right-0 bottom-0 w-[280px] bg-zinc-950 border-l border-white/10 p-6 flex flex-col gap-6 md:hidden shadow-2xl"
+              className="fixed top-20 right-0 bottom-0 w-[280px] bg-black border-l border-white/10 p-6 flex flex-col gap-6 md:hidden shadow-2xl"
             >
               <div className="space-y-2">
                 <p className="text-[10px] font-bold text-gray-500 uppercase tracking-[0.2em] mb-4">Navigation</p>
